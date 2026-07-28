@@ -6,29 +6,52 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.userhub.presentation.AddUserViewModel
 import com.userhub.presentation.UserFeedUiState
 import com.userhub.presentation.UserFeedViewModel
 import com.userhub.presentation.UserUiModel
+import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
-fun DirectoryScreen(feedViewModel: UserFeedViewModel = koinViewModel()) {
+fun DirectoryScreen(
+    feedViewModel: UserFeedViewModel = koinViewModel(),
+    addUserViewModel: AddUserViewModel = koinViewModel()
+) {
     val state by feedViewModel.state.collectAsStateWithLifecycle()
+    val addState by addUserViewModel.state.collectAsStateWithLifecycle()
 
+    var showAddSheet by remember { mutableStateOf(false) }
     var selectedUser by remember { mutableStateOf<UserUiModel?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
-    Scaffold { padding ->
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        floatingActionButton = {
+            FloatingActionButton(onClick = { showAddSheet = true }) {
+                Icon(Icons.Default.Add, contentDescription = null)
+            }
+        }
+    ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
             when (val current = state) {
                 UserFeedUiState.Loading -> LoadingSkeleton()
@@ -42,6 +65,23 @@ fun DirectoryScreen(feedViewModel: UserFeedViewModel = koinViewModel()) {
                 )
             }
         }
+    }
+
+    if (showAddSheet) {
+        NewUserSheet(
+            state = addState,
+            onDismiss = {
+                showAddSheet = false
+                addUserViewModel.clearError()
+            },
+            onSubmit = { name, email ->
+                addUserViewModel.submit(name, email) { created ->
+                    feedViewModel.onUserCreated(created)
+                    showAddSheet = false
+                    scope.launch { snackbarHostState.showSnackbar("User added") }
+                }
+            }
+        )
     }
 
 }
