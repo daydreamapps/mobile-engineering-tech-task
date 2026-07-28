@@ -1,7 +1,9 @@
 package com.userhub.ui
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -61,13 +63,31 @@ fun DirectoryScreen(
             when (val current = state) {
                 UserFeedUiState.Loading -> LoadingSkeleton()
                 UserFeedUiState.NoInternet -> ConnectionErrorState(onRetry = feedViewModel::load)
-                is UserFeedUiState.Content -> UserList(
-                    users = current.users,
-                    lastSyncLabel = current.lastSyncLabel,
-                    onClick = { selectedUser = it },
-                    onLongPress = { pendingDelete = it },
-                    modifier = Modifier.fillMaxSize()
-                )
+                is UserFeedUiState.Content -> BoxWithConstraints {
+                    if (maxWidth >= 700.dp) {
+                        Row {
+                            UserList(
+                                users = current.users,
+                                lastSyncLabel = current.lastSyncLabel,
+                                onClick = { selectedUser = it },
+                                onLongPress = { pendingDelete = it },
+                                modifier = Modifier.weight(2f)
+                            )
+                            DetailPanel(
+                                user = selectedUser ?: current.users.firstOrNull(),
+                                modifier = Modifier.weight(3f)
+                            )
+                        }
+                    } else {
+                        UserList(
+                            users = current.users,
+                            lastSyncLabel = current.lastSyncLabel,
+                            onClick = { selectedUser = it },
+                            onLongPress = { pendingDelete = it },
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                }
             }
         }
     }
