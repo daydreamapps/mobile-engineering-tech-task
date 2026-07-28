@@ -1,0 +1,18 @@
+CREATE TABLE user_cache (
+    id INTEGER NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT NOT NULL,
+    gender TEXT NOT NULL,
+    status TEXT NOT NULL,
+    cached_at INTEGER NOT NULL
+);
+
+insertUser:
+INSERT OR REPLACE INTO user_cache(id, name, email, gender, status, cached_at)
+VALUES (?, ?, ?, ?, ?, ?);
+
+clearAll:
+DELETE FROM user_cache;
+
+selectAll:
+SELECT * FROM user_cache;
