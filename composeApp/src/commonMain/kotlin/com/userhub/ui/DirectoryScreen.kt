@@ -8,13 +8,17 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -40,6 +44,7 @@ fun DirectoryScreen(
     val addState by addUserViewModel.state.collectAsStateWithLifecycle()
 
     var showAddSheet by remember { mutableStateOf(false) }
+    var pendingDelete by remember { mutableStateOf<UserUiModel?>(null) }
     var selectedUser by remember { mutableStateOf<UserUiModel?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -60,7 +65,7 @@ fun DirectoryScreen(
                     users = current.users,
                     lastSyncLabel = current.lastSyncLabel,
                     onClick = { selectedUser = it },
-                    onLongPress = {},
+                    onLongPress = { pendingDelete = it },
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -84,6 +89,34 @@ fun DirectoryScreen(
         )
     }
 
+    pendingDelete?.let { user ->
+        AlertDialog(
+            onDismissRequest = { pendingDelete = null },
+            title = { Text("Delete user?") },
+            text = { Text("${user.name} will be removed from the directory.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        pendingDelete = null
+                        feedViewModel.onDeleteConfirmed(user)
+                        scope.launch {
+                            val result = snackbarHostState.showSnackbar(
+                                message = "User deleted",
+                                actionLabel = "Undo",
+                                duration = SnackbarDuration.Long
+                            )
+                            if (result == SnackbarResult.ActionPerformed) {
+                                feedViewModel.onUndo()
+                            }
+                        }
+                    }
+                ) { Text("Delete") }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingDelete = null }) { Text("Cancel") }
+            }
+        )
+    }
 }
 
 @Composable
