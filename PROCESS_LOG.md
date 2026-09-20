@@ -80,3 +80,11 @@ Additionally, a couple of minor compiler warnings here: use of `Duration` at the
 On top of the timing issue, undo itself is broken: it only re-adds the user back into the UI's rendering list, not into the repository/cache. Even if it did write back to the repository, that would introduce further problems — e.g. IDs being reissued on re-add, or the re-add being rejected for reasons like duplicate IDs, plus whatever other linking/relationships exist. The implementation is inherently broken as designed.
 
 I confirmed this myself by testing: deleting a user, tapping undo, then restarting the app — the user does not come back. This directly confirms the finding from the initial AI-assisted scan that this flow is fundamentally broken and does not meet the brief's acceptance criteria.
+
+---
+
+## 2026-09-20 — Note (dictated)
+
+`UserUiMapper` (`composeApp/src/commonMain/kotlin/com/userhub/presentation/UserUiMapper.kt`) explains the earlier "added timing" oddity I'd spotted: it automatically adds five minutes onto one of the items. Not sure if that's just an artifact of using a test account. In a more sophisticated implementation this would presumably have the real added-at value stored instead, but that clearly hasn't been the focus for this tech task — noting it in the log regardless.
+
+This also partly explains the earlier "an hour off" timestamp observation, though not fully — I'm still not sure why that was off by an hour. Will dig further if needed. A quick look through `TimeProvider` (`domain/src/commonMain/kotlin/com/userhub/domain/time/TimeProvider.kt` and its Android/iOS `expect`/`actual` implementations) doesn't show any obvious core issue at first pass.
