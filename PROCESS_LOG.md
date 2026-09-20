@@ -139,3 +139,20 @@ System.out  I  HTTP: REQUEST https://gorest.co.in/public/v2/users failed with ex
 ![Fatal exception: NoSuchElementException in UserRepositoryImpl.getUsers on empty cache + offline](process_log_assets/empty-cache-offline-crash.png)
 
 This is probably the largest issue found so far, since it could give a negative first impression end-to-end immediately. It's also directly relevant to the acceptance criteria around the user being told what's wrong — I noted earlier that the error messages elsewhere are incomplete and not particularly offline-first-minded, but here the app doesn't tell the user anything at all, because it hard crashes outright. This goes to the top of the list of candidates to fix ourselves, though that list is going to stay a short one.
+
+---
+
+## 2026-09-20 — Note (dictated)
+
+Screenshots from testing the add-user flow. Most of it seems fine — validation is very basic, but this is a proof-of-concept, so that's acceptable at this stage:
+
+![Add user form](process_log_assets/add-user-form.png)
+![Add user validation errors](process_log_assets/add-user-validation.png)
+
+What is interesting: when a new user is added to the list, it correctly shows "Just now" — but that's not consistent with the staggered "X minutes ago" values shown for the other rows around it (5 minutes ago, 10 minutes ago, 15 minutes ago, etc., all in neat 5-minute steps rather than reflecting real elapsed time):
+
+![Newly added user showing "Just now" next to a row of suspiciously staggered relative times](process_log_assets/added-relative-time-mismatch.png)
+
+This highlights that we're missing part of the acceptance criteria. The AC states: *"Each row shows the user's name, email address, and how long ago they were added, expressed relatively ('5 minutes ago')."* What's actually implemented has been simplified down to just a flat five-minute stagger between each row, rather than the real underlying "added at" value the AC calls for.
+
+This is probably our #2 priority to address. The delete functionality is interesting in its own right, but the read functionality — showing accurate data on the main feed — matters more.
