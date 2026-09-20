@@ -264,3 +264,17 @@ Results, run module by module:
 | 4 — Selection resolver | `:composeApp` | Compile failure — no `resolveSelectedUser()` exists yet |
 
 One test not expected to be RED, `drops cached users that are no longer present in the latest fetch`, passed — the existing clear-and-reinsert cache strategy already happens to satisfy it. Noted rather than forced to fail.
+
+---
+
+## 2026-09-20 — Note (dictated)
+
+Session summary. Spent roughly two hours on this session's work today (not fully continuous — took a dinner break partway through).
+
+Overall assessment: the engineer has not completed this task successfully, though not in an unsolvable way — it needs intervention from me or a senior engineer to get to a shippable state. First-glance read is that this isn't ready to ship this week; that timeline is tightest around whichever direction (MVVM or MVI) the alignment work takes, pending the engineer's own reflection and preference. That said, given how they've already set this up with AI tooling, and the additional context this review has built up, that alignment work should be achievable within a day once decided. The other four issues are individually small. What's most glaring is that the tests added today fail against each of the acceptance criteria they target — but none of this reads as a terminal problem with the project.
+
+Changes made today were deliberately limited to the four failing tests plus supporting context documents — no fixes.
+
+Note on approach: I lean on producing a fair number of artifacts through this kind of review — visual formats are easier to think against and kick around before anything smaller comes back out to someone else. Most of these are disposable working documents, not precious outputs (nothing AI-generated should be treated as precious). This is a workflow I've settled into over the last few months and expect it to keep evolving. Of everything produced in this session, only the final "UserHub Check-In" artifact would actually go to the engineer, and even that stays small and enumerated rather than a dense narrative summary — enumerated lists make it easier to see how far through you are when the content includes criticism, and let the recipient pre-empt which points they'd just take on the spot versus which ones are worth real discussion.
+
+Next steps: stopping here for today. Sending the project to my recruiting contact after this. Before the next interview, I'll write a short human summary covering only what was actually done today, to make it easier for them to digest — planning to do that tomorrow morning, not tonight.
