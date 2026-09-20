@@ -190,3 +190,19 @@ Findings:
 Produced an artifact laying this out visually — diagrams of the state-ownership split and the DTO-leak flow, the current flat package tree, and two consistent restructuring options (lean into MVI vs lean into MVVM) each showing its own package shape and how it resolves all four bugs found (stale panel, DTO leak, undo/delete timing, lost selection on rotation), plus a quick-reference table and a closing set of questions for discussion rather than a prescribed answer:
 
 https://claude.ai/code/artifact/b6928d06-4f41-4754-81e2-1dec0f75d7cb
+
+---
+
+## 2026-09-20 — Action (assistant)
+
+Functional-changes track wrap-up (the second of the three parallel sessions described above). Scope was the three items named at the end of the pre-split entry: the empty-cache/offline crash, the missing relative "added ago" time, and the undo/delete timing.
+
+No production code has been changed on this branch yet — this session's output is a concrete, test-first implementation plan for all three, precise enough to hand to a fresh session per item and build without further discovery work. Traced each to its exact root cause in the current code:
+
+- **Empty-cache crash** — `UserRepositoryImpl.getUsers()` calls `cached.maxOf { it.cachedAt }` unconditionally before checking `cached.isEmpty()`, so an offline launch with no cache throws `NoSuchElementException` instead of returning `UsersResult.NoInternet`. Smallest of the three; a few line reorder.
+- **Fabricated "added ago" time** — `UserUiMapper` stamps each row with `now - index * 5min` rather than any real value, because the SQLDelight cache has nowhere to preserve a per-user first-seen time (every sync clears the table and reinserts everything stamped with the current sync time). While tracing this, also found a second, previously-parked bug that would silently undermine the fix: `TimeProvider.nowEpochMillis()` adds the local UTC offset on top of true epoch millis, while the cache's timestamps don't — so relative times come out inflated by exactly one hour on any non-UTC device (this is the "timestamp ~an hour off" oddity noted earlier in this log). Both need fixing together.
+- **Undo/delete timing** — confirmed again independently: `onDeleteConfirmed()` fires the network delete immediately via `GlobalScope`, before the undo snackbar even appears, and `onUndo()` only ever patched in-memory UI state. Fix doesn't make undo smarter — it defers the actual delete until `DirectoryScreen`'s existing `SnackbarHostState.showSnackbar()` call returns anything other than "action performed," which is already the exact "undo window elapsed" signal the AC calls for; it just isn't wired to anything yet.
+
+Each of the three is written up with the current buggy code, the failing test to add first, the passing implementation, and manual verification steps, plus an explicit note on where the three overlap in the file tree if run as separate sessions (items 1 and 2 both touch `UserRepositoryImpl`'s catch block; item 3 is independent). Full detail is in `IMPLEMENTATION_PLAN.md`, added to this branch; a formatted version for easier review is here:
+
+https://claude.ai/code/artifact/4dca5664-58c9-4ade-b29e-5aeaaca8b45e
