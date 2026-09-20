@@ -224,3 +224,17 @@ Findings:
 ## 2026-09-20 — Note (dictated)
 
 All three parallel sessions have come back and been confirmed in this log — architecture, functional changes, and the `GlobalScope` research. From this point we're back on a single implementation track in this session, working from the combined findings above (`IMPLEMENTATION_PLAN.md`, the Structure & State Review artifact, and the `GlobalScope` recommendation folded into the undo/delete fix).
+
+---
+
+## 2026-09-20 — Note (dictated)
+
+Review point. Added a fourth workstream to `IMPLEMENTATION_PLAN.md` covering the detail-panel selection issue (lost on rotation, stale after deleting the selected user) — smallest and most isolated of the four, a pure resolver function plus three unit tests, no Compose UI test framework needed.
+
+Decision: not fixing any of this myself. This is too large a change to make unilaterally, and — separately — this project is explicitly a test of judgment for a senior/upcoming-mid-level engineer; the learning is the point, not the fix. In its current state this is not fit for purpose and won't be continuing as-is.
+
+Plan: write the four failing tests named across the implementation plan's workstreams (no implementation, tests only) and push them up, then get on a call with the engineer to go through the findings and the wider architectural points as a discussion — genuinely constructive, not punitive. They haven't done anything wrong; this is about the bar the project needs to hit, and about understanding what they'd have done differently, what they struggled with, and what they'd prioritize with more time — echoing the brief's own framing.
+
+Prepared a pre-read to share ahead of that call — what's working, the four fixes needed, a pointer to the architecture write-up, and the questions to open the conversation with:
+
+https://claude.ai/code/artifact/0e896ff3-b24f-436b-8672-07e9991352e1
