@@ -112,3 +112,30 @@ Screenshot showing the stale detail panel (Pixel Tablet, after deleting down to 
 Also worth noting: deleting the final user allows the feed to resync correctly — it pulls the latest values from the API, same as a fresh launch. Against live test data this resync is obviously going to look inconsistent run to run, but the resync mechanism itself works fine in this case.
 
 One thing I was specifically watching for: the initial AI-assisted scan flagged a risk that an empty cache combined with a fetch failure could crash the app. I was not able to reproduce that here. Not sure if that's because the underlying risk isn't actually there in practice, or just that I haven't hit the right conditions — noting it either way since it was something I was deliberately keeping an eye out for.
+
+---
+
+## 2026-09-20 — Note (dictated)
+
+I've now managed to replicate the empty-cache crash flagged by the initial AI-assisted scan, which I couldn't reproduce earlier by reading the code alone. To trigger it: cleared the app's storage, then relaunched with Wi-Fi disabled.
+
+The app hard crashes on launch:
+
+```
+AndroidRuntime  E  FATAL EXCEPTION: main
+                    Process: com.userhub, PID: 5334
+                    java.util.NoSuchElementException
+                        at com.userhub.data.repository.UserRepositoryImpl$getUsers$2.invokeSuspend(UserRepositoryImpl.kt:24)
+                        at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+                        ...
+                        Suppressed: kotlinx.coroutines.internal.DiagnosticCoroutineContextException: [StandaloneCoroutine{Cancelling}@69b6b7e, Dispatchers.Main.immediate]
+```
+
+Preceded in the log by:
+```
+System.out  I  HTTP: REQUEST https://gorest.co.in/public/v2/users failed with exception: java.net.UnknownHostException: Unable to resolve host "gorest.co.in": No address associated with hostname
+```
+
+![Fatal exception: NoSuchElementException in UserRepositoryImpl.getUsers on empty cache + offline](process_log_assets/empty-cache-offline-crash.png)
+
+This is probably the largest issue found so far, since it could give a negative first impression end-to-end immediately. It's also directly relevant to the acceptance criteria around the user being told what's wrong — I noted earlier that the error messages elsewhere are incomplete and not particularly offline-first-minded, but here the app doesn't tell the user anything at all, because it hard crashes outright. This goes to the top of the list of candidates to fix ourselves, though that list is going to stay a short one.
