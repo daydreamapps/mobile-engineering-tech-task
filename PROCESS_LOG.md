@@ -88,3 +88,13 @@ I confirmed this myself by testing: deleting a user, tapping undo, then restarti
 `UserUiMapper` (`composeApp/src/commonMain/kotlin/com/userhub/presentation/UserUiMapper.kt`) explains the earlier "added timing" oddity I'd spotted: it automatically adds five minutes onto one of the items. Not sure if that's just an artifact of using a test account. In a more sophisticated implementation this would presumably have the real added-at value stored instead, but that clearly hasn't been the focus for this tech task — noting it in the log regardless.
 
 This also partly explains the earlier "an hour off" timestamp observation, though not fully — I'm still not sure why that was off by an hour. Will dig further if needed. A quick look through `TimeProvider` (`domain/src/commonMain/kotlin/com/userhub/domain/time/TimeProvider.kt` and its Android/iOS `expect`/`actual` implementations) doesn't show any obvious core issue at first pass.
+
+---
+
+## 2026-09-20 — Note (dictated)
+
+`AppTheme` (`composeApp/src/commonMain/kotlin/com/userhub/ui/AppTheme.kt`) — good idea, broken execution. Colors are given names, and those named colors are applied to values, but the naming/value consistency breaks down almost immediately. This should be fixed: consistent brand color names paired with consistent theme values matter a lot on a multiplatform project, since it's one of the easiest places for design and engineering to share exact language and save real time. Fixing this now, while it's small, should be straightforward as long as the new naming doesn't deviate from the actual internal design language.
+
+Related: looking across the screens, there are inconsistent uses of constants for spacing/widths — some screens even hardcode values inline rather than using a shared constant. Same category of issue as the color naming: this is the kind of thing best resolved in collaboration with whoever owns the design language, but fixing it early while small would help a lot, especially for keeping design and engineering aligned.
+
+Separately — noticed something new while looking at this: the detail panel isn't shown on narrow devices. Unclear whether the intent is for this to become a separate page on normal phones in future, or whether it's meant to stay tablet/wide-only as a split panel. Going to boot the app up on a tablet next to see it in action before drawing a conclusion.
