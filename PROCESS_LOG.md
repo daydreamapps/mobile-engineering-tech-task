@@ -166,3 +166,11 @@ Rounding out the undo/delete point already raised: we've established this doesn'
 That gives us three core items needed to make this functional and AC-compliant: the empty-cache/offline crash, the missing relative "added ago" time on feed rows, and the undo/delete timing.
 
 Next step: going to talk through the aspects of the overall project that feel out of sync more broadly, then work with Claude to investigate and decide on the actual changes to make.
+
+---
+
+## 2026-09-20 — Note (dictated)
+
+Splitting into three parallel Claude sessions from this point: this session continues on the architecture/structure track (MVI vs MVVM, package layout — see the "Structure & State Review" artifact). A second session is focused on the core functional changes under consideration (the empty-cache crash, the missing relative "added ago" time, and the undo/delete timing). A third, smaller session is researching best practices around the `GlobalScope` concern flagged earlier in this log.
+
+All three sessions will write to this same `PROCESS_LOG.md` on `chore/build-config`. Each will post its own entries as it completes points of work, and I'll pull the sessions back together here once all three tracks are done, with a closing entry marking when the split ends and covering final steps before submission.
