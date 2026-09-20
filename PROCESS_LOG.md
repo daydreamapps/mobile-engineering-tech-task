@@ -98,3 +98,17 @@ This also partly explains the earlier "an hour off" timestamp observation, thoug
 Related: looking across the screens, there are inconsistent uses of constants for spacing/widths — some screens even hardcode values inline rather than using a shared constant. Same category of issue as the color naming: this is the kind of thing best resolved in collaboration with whoever owns the design language, but fixing it early while small would help a lot, especially for keeping design and engineering aligned.
 
 Separately — noticed something new while looking at this: the detail panel isn't shown on narrow devices. Unclear whether the intent is for this to become a separate page on normal phones in future, or whether it's meant to stay tablet/wide-only as a split panel. Going to boot the app up on a tablet next to see it in action before drawing a conclusion.
+
+---
+
+## 2026-09-20 — Note (dictated)
+
+A quick test on the tablet reveals another bug: when the currently-selected user in the master-detail view is deleted, the detail panel does not update — it keeps showing that user's content. It only switches away when a different user is clicked. When the last/final user is deleted, the detail panel still shows their details on the right-hand side, with no list left to select from.
+
+Screenshot showing the stale detail panel (Pixel Tablet, after deleting down to the last user):
+
+![Detail panel still showing a deleted user's details](process_log_assets/detail-panel-stale-after-last-delete.png)
+
+Also worth noting: deleting the final user allows the feed to resync correctly — it pulls the latest values from the API, same as a fresh launch. Against live test data this resync is obviously going to look inconsistent run to run, but the resync mechanism itself works fine in this case.
+
+One thing I was specifically watching for: the initial AI-assisted scan flagged a risk that an empty cache combined with a fetch failure could crash the app. I was not able to reproduce that here. Not sure if that's because the underlying risk isn't actually there in practice, or just that I haven't hit the right conditions — noting it either way since it was something I was deliberately keeping an eye out for.
