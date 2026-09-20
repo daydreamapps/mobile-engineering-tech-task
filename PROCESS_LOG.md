@@ -174,3 +174,19 @@ Next step: going to talk through the aspects of the overall project that feel ou
 Splitting into three parallel Claude sessions from this point: this session continues on the architecture/structure track (MVI vs MVVM, package layout — see the "Structure & State Review" artifact). A second session is focused on the core functional changes under consideration (the empty-cache crash, the missing relative "added ago" time, and the undo/delete timing). A third, smaller session is researching best practices around the `GlobalScope` concern flagged earlier in this log.
 
 All three sessions will write to this same `PROCESS_LOG.md` on `chore/build-config`. Each will post its own entries as it completes points of work, and I'll pull the sessions back together here once all three tracks are done, with a closing entry marking when the split ends and covering final steps before submission.
+
+---
+
+## 2026-09-20 — Action (assistant)
+
+Architecture track wrap-up. Investigated the MVVM/MVI inconsistency and package structure flagged earlier, with web research into current Kotlin Multiplatform / Compose Multiplatform structuring practice.
+
+Findings:
+- `UserFeedUiState` (sealed interface, MVI-style) and `AddUserState` (flat data class + success callback, MVVM-style) model state in two different philosophies within the same `presentation` package.
+- The root cause of the stale-detail-panel bug (and, as flagged separately, the lost-selection-on-rotation bug) is the same: `DirectoryScreen` holds `selectedUser`, `pendingDelete`, and `showAddSheet` as local `remember {}` state rather than in either ViewModel's observable state, so nothing re-derives or persists it.
+- `AddUserViewModel.submit()`'s success callback carries a raw `UserDto` through `DirectoryScreen` into `UserFeedViewModel.onUserCreated()`, crossing the UI boundary this project's own CLAUDE.md says should only ever see `UserUiModel`.
+- `presentation/` and `ui/` are both flat, single-folder packages, inconsistent with `domain/` and `data/`, which are both already organized by concern (`domain/time/`, `domain/usecase/`; `data/local/`, `data/remote/`, `data/repository/`). Current 2026 guidance for KMP/Compose Multiplatform favors feature-based package grouping with layer separation inside each feature.
+
+Produced an artifact laying this out visually — diagrams of the state-ownership split and the DTO-leak flow, the current flat package tree, and two consistent restructuring options (lean into MVI vs lean into MVVM) each showing its own package shape and how it resolves all four bugs found (stale panel, DTO leak, undo/delete timing, lost selection on rotation), plus a quick-reference table and a closing set of questions for discussion rather than a prescribed answer:
+
+https://claude.ai/code/artifact/b6928d06-4f41-4754-81e2-1dec0f75d7cb
