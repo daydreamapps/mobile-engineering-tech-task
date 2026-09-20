@@ -156,3 +156,13 @@ What is interesting: when a new user is added to the list, it correctly shows "J
 This highlights that we're missing part of the acceptance criteria. The AC states: *"Each row shows the user's name, email address, and how long ago they were added, expressed relatively ('5 minutes ago')."* What's actually implemented has been simplified down to just a flat five-minute stagger between each row, rather than the real underlying "added at" value the AC calls for.
 
 This is probably our #2 priority to address. The delete functionality is interesting in its own right, but the read functionality — showing accurate data on the main feed — matters more.
+
+---
+
+## 2026-09-20 — Note (dictated)
+
+Rounding out the undo/delete point already raised: we've established this doesn't work as specified — it deletes immediately rather than undoing anything. What's needed is some kind of callback for when the "undo window has elapsed" (the AC's exact language), and given the AC asks for this to use a snackbar, there's presumably meant to be some form of on-dismiss callback from the snackbar, or a persistent timer of some kind, driving that. This is another key item to address, though the exact implementation approach (how, specifically, the "elapsed" signal is derived) is more of an open, minor detail that could vary — the core requirement is what matters.
+
+That gives us three core items needed to make this functional and AC-compliant: the empty-cache/offline crash, the missing relative "added ago" time on feed rows, and the undo/delete timing.
+
+Next step: going to talk through the aspects of the overall project that feel out of sync more broadly, then work with Claude to investigate and decide on the actual changes to make.
