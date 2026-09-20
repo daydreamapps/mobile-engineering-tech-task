@@ -66,3 +66,17 @@ Two things jump out:
 There's no failure case tested at all — the only check performed is that the error state is cleared, never that an error is actually surfaced correctly.
 
 Additionally, a couple of minor compiler warnings here: use of `Duration` at the delay's timing point, and a missing opt-in for an annotation. This isn't the first opt-in annotation point I've seen across the project. Low importance given this is a test exercise, but this kind of thing would definitely matter in a larger production project.
+
+---
+
+## 2026-09-20 — Note (dictated)
+
+`UserFeedViewModel` (`composeApp/src/commonMain/kotlin/com/userhub/presentation/UserFeedViewModel.kt`) — two points.
+
+**1. Stale-data timestamp oddity (parked for now).** The "last updated" offline banner behaves correctly when I go offline — it shows null and doesn't display while the connection is up. But when I turn the connection off, it shows a timestamp from roughly an hour earlier than expected. Not sure yet if this is a BST/UTC handling issue, something else, or simply that a sync genuinely did happen in the previous hour. Given limited time, parking this rather than chasing it now — will circle back if it rises to the top of the priority list.
+
+**2. Delete/undo is fundamentally broken, confirming the initial AI-assisted scan's finding.** `onDeleteConfirmed()` uses a hardcoded `GlobalScope` and fires the delete immediately — this doesn't feel right; I'd expect a custom dispatcher/scope owned by the ViewModel instead of reaching for `GlobalScope` directly. The `@DelicateCoroutinesApi` annotation is correctly present, acknowledging this is a deliberate but risky choice, but that doesn't make it the right call — some proper internal mechanism would be far more appropriate. This is wrong both for the offline-first ethos of the app and, more fundamentally, for the brief itself: a delete should only be submitted once confirmed (i.e. once the undo window has closed), not immediately with undo attempting to claw it back afterwards.
+
+On top of the timing issue, undo itself is broken: it only re-adds the user back into the UI's rendering list, not into the repository/cache. Even if it did write back to the repository, that would introduce further problems — e.g. IDs being reissued on re-add, or the re-add being rejected for reasons like duplicate IDs, plus whatever other linking/relationships exist. The implementation is inherently broken as designed.
+
+I confirmed this myself by testing: deleting a user, tapping undo, then restarting the app — the user does not come back. This directly confirms the finding from the initial AI-assisted scan that this flow is fundamentally broken and does not meet the brief's acceptance criteria.
