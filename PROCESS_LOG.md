@@ -218,3 +218,9 @@ Findings:
 - Official Kotlin/Android guidance is to avoid `GlobalScope` in app code. Where a lifecycle-scoped option (`viewModelScope`, `lifecycleScope`) isn't enough because work genuinely needs to outlive a shorter-lived component, the standard replacement is an explicitly injected application-level scope (e.g. a `SupervisorJob() + Dispatchers.Default` wrapper registered once in DI), not a raw call to the global one. That gives the same "survives the screen" behaviour but as a real, fakeable dependency, with a `CoroutineExceptionHandler` to actually surface failures instead of swallowing them.
 - However, that pattern is a fix for a *different* problem than the one actually present here. The functional-changes track (previous entry) independently reached the same conclusion on the undo/delete item: once the delete is correctly deferred until the undo window has elapsed (per the AC), there's no remaining reason for it to outlive the screen at all — at that point it belongs in ordinary `viewModelScope`, and `GlobalScope`/`@DelicateCoroutinesApi` should be deleted outright rather than replaced with a custom scope.
 - Net recommendation: no custom-scope mechanism is needed. This finding folds into the functional-changes track's undo/delete fix (`IMPLEMENTATION_PLAN.md`) rather than standing as a separate change — flagging that here so it isn't duplicated as independent follow-up work.
+
+---
+
+## 2026-09-20 — Note (dictated)
+
+All three parallel sessions have come back and been confirmed in this log — architecture, functional changes, and the `GlobalScope` research. From this point we're back on a single implementation track in this session, working from the combined findings above (`IMPLEMENTATION_PLAN.md`, the Structure & State Review artifact, and the `GlobalScope` recommendation folded into the undo/delete fix).
