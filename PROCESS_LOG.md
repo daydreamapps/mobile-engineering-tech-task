@@ -56,3 +56,13 @@ Two things jump out:
 1. **Weak error handling.** Only the success case from the HTTP call is checked — there's no handling of the different failure status codes that could come back, and no inspection of response content on failure either (though that would be a secondary concern).
 
 2. **Both failure paths collapse to the same message.** Whether the response comes back as a non-200 status, or the request fails to go out at all, the result is reported to the user as "no internet connection" in both cases. This stood out because offline-first is one of the project's headline features — the README does note that offline-first only applies to the fetch path, but it's still strange that the error messaging/handling on the write side shows no offline-first thinking at all. It raises a broader question about how genuinely "offline-first" the project is, which I'll keep testing as I go through more of the code.
+
+---
+
+## 2026-09-20 — Note (dictated)
+
+`AddUserViewModelTest` (`composeApp/src/commonTest/kotlin/com/userhub/presentation/AddUserViewModelTest.kt`) mostly looks okay. It's simple and only covers two cases — submission and success — both using a fake repository, which is an interesting implementation choice, but it seems fine, returning real HTTP response values via a Ktor mock library.
+
+There's no failure case tested at all — the only check performed is that the error state is cleared, never that an error is actually surfaced correctly.
+
+Additionally, a couple of minor compiler warnings here: use of `Duration` at the delay's timing point, and a missing opt-in for an annotation. This isn't the first opt-in annotation point I've seen across the project. Low importance given this is a test exercise, but this kind of thing would definitely matter in a larger production project.
