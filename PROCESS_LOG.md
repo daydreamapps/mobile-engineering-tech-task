@@ -44,3 +44,15 @@ Reviewed the full Android and iOS runtime logs provided. Findings:
 - **Needs verification**: on Android, immediately after a DELETE request completed successfully (204), the log shows `InputDispatcher: Channel is unrecoverably broken and will be disposed!` followed by the app process restarting entirely (old PID → new PID). No crash stack trace (`FATAL EXCEPTION`/`AndroidRuntime`) was present in the captured log to confirm this was a crash rather than a manual reinstall/relaunch from the IDE — flagged to check with a full unfiltered logcat if it recurs.
 - No issue found with cache/backend consistency — record counts and deleted-user visibility across subsequent fetches were consistent with expected full-resync behaviour.
 - Minor observation: user creation succeeded server-side with unusual input (mixed-case email, non-standard domains) with no apparent client-side rejection — worth checking against the AddUser screen's validation claims later, not treated as a confirmed bug yet.
+
+---
+
+## 2026-09-20 — Note (dictated)
+
+Initial sweep of the code, starting with `AddUserViewModel` (`composeApp/src/commonMain/kotlin/com/userhub/presentation/AddUserViewModel.kt`).
+
+Two things jump out:
+
+1. **Weak error handling.** Only the success case from the HTTP call is checked — there's no handling of the different failure status codes that could come back, and no inspection of response content on failure either (though that would be a secondary concern).
+
+2. **Both failure paths collapse to the same message.** Whether the response comes back as a non-200 status, or the request fails to go out at all, the result is reported to the user as "no internet connection" in both cases. This stood out because offline-first is one of the project's headline features — the README does note that offline-first only applies to the fetch path, but it's still strange that the error messaging/handling on the write side shows no offline-first thinking at all. It raises a broader question about how genuinely "offline-first" the project is, which I'll keep testing as I go through more of the code.
