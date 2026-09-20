@@ -206,3 +206,15 @@ No production code has been changed on this branch yet — this session's output
 Each of the three is written up with the current buggy code, the failing test to add first, the passing implementation, and manual verification steps, plus an explicit note on where the three overlap in the file tree if run as separate sessions (items 1 and 2 both touch `UserRepositoryImpl`'s catch block; item 3 is independent). Full detail is in `IMPLEMENTATION_PLAN.md`, added to this branch; a formatted version for easier review is here:
 
 https://claude.ai/code/artifact/4dca5664-58c9-4ade-b29e-5aeaaca8b45e
+
+---
+
+## 2026-09-20 — Action (assistant)
+
+`GlobalScope` track wrap-up (the third and smallest of the three parallel sessions described above). Scope was narrower than the other two tracks by design: research best practice around the `GlobalScope` usage in `UserFeedViewModel.onDeleteConfirmed()` (`composeApp/src/commonMain/kotlin/com/userhub/presentation/UserFeedViewModel.kt:61`), not to produce its own implementation plan. No production code or artifact was produced on this track — findings below are meant to feed into whichever session actually implements the undo/delete fix.
+
+Findings:
+- `GlobalScope` is flagged `@DelicateCoroutinesApi` for good reason: it breaks structured concurrency (no parent to cancel or await it as a group), it's tied to process lifetime rather than any owned component so it can't be shut down for tests/logout/teardown, and — concretely in this code — the `runCatching { deleteUser(user.id) }` around it means a failed delete is silently swallowed with no retry, logging, or user-visible error.
+- Official Kotlin/Android guidance is to avoid `GlobalScope` in app code. Where a lifecycle-scoped option (`viewModelScope`, `lifecycleScope`) isn't enough because work genuinely needs to outlive a shorter-lived component, the standard replacement is an explicitly injected application-level scope (e.g. a `SupervisorJob() + Dispatchers.Default` wrapper registered once in DI), not a raw call to the global one. That gives the same "survives the screen" behaviour but as a real, fakeable dependency, with a `CoroutineExceptionHandler` to actually surface failures instead of swallowing them.
+- However, that pattern is a fix for a *different* problem than the one actually present here. The functional-changes track (previous entry) independently reached the same conclusion on the undo/delete item: once the delete is correctly deferred until the undo window has elapsed (per the AC), there's no remaining reason for it to outlive the screen at all — at that point it belongs in ordinary `viewModelScope`, and `GlobalScope`/`@DelicateCoroutinesApi` should be deleted outright rather than replaced with a custom scope.
+- Net recommendation: no custom-scope mechanism is needed. This finding folds into the functional-changes track's undo/delete fix (`IMPLEMENTATION_PLAN.md`) rather than standing as a separate change — flagging that here so it isn't duplicated as independent follow-up work.
