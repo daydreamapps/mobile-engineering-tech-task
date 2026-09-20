@@ -238,3 +238,29 @@ Plan: write the four failing tests named across the implementation plan's workst
 Prepared a pre-read to share ahead of that call — what's working, the four fixes needed, a pointer to the architecture write-up, and the questions to open the conversation with:
 
 https://claude.ai/code/artifact/0e896ff3-b24f-436b-8672-07e9991352e1
+
+---
+
+## 2026-09-20 — Action (assistant)
+
+Implemented the four failing tests from `IMPLEMENTATION_PLAN.md` and ran them per module to confirm each fails against the current code — no fixes implemented, RED only.
+
+Changes made purely to support the tests compiling and running (not fixes):
+- `UsersResult.Success` gained an `addedAtMillis: Map<Long, Long> = emptyMap()` field (unused by `UserRepositoryImpl`, which is otherwise untouched).
+- `CachedUser` gained a `firstSeenAt: Long` field; `UserLocalDataSource.saveUsers()` now returns `List<CachedUser>`. `SqlDelightUserLocalDataSource` was updated only to satisfy that type change — it aliases `firstSeenAt` to the existing `cachedAt` value, marked with a `TODO`, and implements none of the real preserve-across-syncs logic.
+- Test-only fakes (`FakeLocalDataSource`, `FakeUserRepository`) updated to support the new tests.
+- New file: `domain/src/androidUnitTest/kotlin/com/userhub/domain/time/TimeProviderTest.kt` (new source set).
+- New files: `composeApp/.../SelectedUserResolverTest.kt`, `composeApp/.../UserUiMapperTest.kt`.
+
+Results, run module by module:
+
+| Workstream | Module | Result |
+|---|---|---|
+| 1 — Empty-cache crash | `:data` | FAILED — `NoSuchElementException` at `UserRepositoryImpl.kt:24`, the real bug line |
+| 2 — First-seen not preserved | `:data` | FAILED — `NoSuchElementException` (repository never populates `addedAtMillis`) |
+| 2 — TimeProvider UTC offset | `:domain` | FAILED — `AssertionError`, `nowEpochMillis()` off by the BST offset |
+| 2 — Mapper uses real time | `:composeApp` | Compile failure — no `UsersResult.Success.toUiModels()` exists yet |
+| 3 — Delete/undo timing | `:composeApp` | Compile failure — no `onUndoWindowElapsed()` exists yet |
+| 4 — Selection resolver | `:composeApp` | Compile failure — no `resolveSelectedUser()` exists yet |
+
+One test not expected to be RED, `drops cached users that are no longer present in the latest fetch`, passed — the existing clear-and-reinsert cache strategy already happens to satisfy it. Noted rather than forced to fail.

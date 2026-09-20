@@ -84,4 +84,41 @@ class UserFeedViewModelTest {
         assertEquals(3, state.users.size)
         assertEquals(target.id, state.users.first().id)
     }
+
+    // --- Workstream 3: delete only happens once the undo window elapses ---
+
+    @Test
+    fun `deleting does not call the repository until the undo window elapses`() = runTest {
+        val repository = FakeUserRepository(users)
+        val viewModel = viewModel(repository)
+        val target = (viewModel.state.value as UserFeedUiState.Content).users.first()
+
+        viewModel.onDeleteConfirmed(target)
+
+        assertTrue(repository.deletedIds.isEmpty())
+    }
+
+    @Test
+    fun `the delete is sent once the undo window elapses`() = runTest {
+        val repository = FakeUserRepository(users)
+        val viewModel = viewModel(repository)
+        val target = (viewModel.state.value as UserFeedUiState.Content).users.first()
+        viewModel.onDeleteConfirmed(target)
+
+        viewModel.onUndoWindowElapsed()
+
+        assertEquals(listOf(target.id), repository.deletedIds)
+    }
+
+    @Test
+    fun `undo prevents the delete from ever being sent`() = runTest {
+        val repository = FakeUserRepository(users)
+        val viewModel = viewModel(repository)
+        val target = (viewModel.state.value as UserFeedUiState.Content).users.first()
+        viewModel.onDeleteConfirmed(target)
+
+        viewModel.onUndo()
+
+        assertTrue(repository.deletedIds.isEmpty())
+    }
 }

@@ -67,7 +67,11 @@ class UserRepositoryImplTest {
     @Test
     fun `falls back to cached users when the network fails`() = runTest {
         val cached = listOf(
-            CachedUser(UserDto(7, "Cached User", "cached@example.com", "male", "active"), 1_700_000_000_000L)
+            CachedUser(
+                UserDto(7, "Cached User", "cached@example.com", "male", "active"),
+                cachedAt = 1_700_000_000_000L,
+                firstSeenAt = 1_700_000_000_000L
+            )
         )
         val engine = MockEngine { respondError(HttpStatusCode.ServiceUnavailable) }
         val repository = UserRepositoryImpl(
@@ -85,5 +89,53 @@ class UserRepositoryImplTest {
     @Test
     fun `uses the public GoRest base url`() {
         assertTrue(ApiConfig.BASE_URL.startsWith("https://"))
+    }
+
+    // --- Workstream 1: empty-cache/offline crash ---
+
+    @Test
+    fun `returns NoInternet instead of throwing when the network fails and the cache is empty`() = runTest {
+        val engine = MockEngine { respondError(HttpStatusCode.ServiceUnavailable) }
+        val repository = UserRepositoryImpl(
+            GoRestApi(createHttpClient(engine)),
+            FakeLocalDataSource() // empty cache
+        )
+
+        val result = repository.getUsers()
+
+        assertIs<UsersResult.NoInternet>(result)
+    }
+
+    // --- Workstream 2: real "added ago" time (data-layer half) ---
+
+    @Test
+    fun `preserves a user's first-seen time across repeated successful fetches`() = runTest {
+        val local = FakeLocalDataSource()
+        val repository = UserRepositoryImpl(GoRestApi(createHttpClient(successEngine())), local)
+
+        val first = repository.getUsers()
+        val second = repository.getUsers()
+
+        assertIs<UsersResult.Success>(first)
+        assertIs<UsersResult.Success>(second)
+        assertEquals(first.addedAtMillis.getValue(1L), second.addedAtMillis.getValue(1L))
+    }
+
+    @Test
+    fun `drops cached users that are no longer present in the latest fetch`() = runTest {
+        val local = FakeLocalDataSource(
+            initial = listOf(
+                CachedUser(
+                    UserDto(99, "Stale User", "stale@example.com", "male", "active"),
+                    cachedAt = 1L,
+                    firstSeenAt = 1L
+                )
+            )
+        )
+        val repository = UserRepositoryImpl(GoRestApi(createHttpClient(successEngine())), local)
+
+        repository.getUsers()
+
+        assertTrue(local.getUsers().none { it.user.id == 99L })
     }
 }
