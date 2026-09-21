@@ -86,4 +86,41 @@ class UserRepositoryImplTest {
     fun `uses the public GoRest base url`() {
         assertTrue(ApiConfig.BASE_URL.startsWith("https://"))
     }
+
+    // --- Workstream 1: empty-cache/offline crash ---
+
+    @Test
+    fun `returns NoInternet instead of throwing when the network fails and the cache is empty`() = runTest {
+        val engine = MockEngine { respondError(HttpStatusCode.ServiceUnavailable) }
+        val repository = UserRepositoryImpl(
+            GoRestApi(createHttpClient(engine)),
+            FakeLocalDataSource() // empty cache
+        )
+
+        val result = repository.getUsers()
+
+        assertIs<UsersResult.NoInternet>(result)
+    }
+
+    // --- Workstream 2: real "added ago" time (data-layer half) ---
+    //
+    // The "preserves a user's first-seen time across repeated successful fetches" test from
+    // IMPLEMENTATION_PLAN.md is not included here: it asserts on `UsersResult.Success.addedAtMillis`,
+    // which does not exist anywhere in production. There is no way to express this test against
+    // today's code without first adding that field/capability to production — which is out of
+    // scope for this branch (tests only, no fixes). See PROCESS_LOG.md.
+
+    @Test
+    fun `drops cached users that are no longer present in the latest fetch`() = runTest {
+        val local = FakeLocalDataSource(
+            initial = listOf(
+                CachedUser(UserDto(99, "Stale User", "stale@example.com", "male", "active"), cachedAt = 1L)
+            )
+        )
+        val repository = UserRepositoryImpl(GoRestApi(createHttpClient(successEngine())), local)
+
+        repository.getUsers()
+
+        assertTrue(local.getUsers().none { it.user.id == 99L })
+    }
 }
