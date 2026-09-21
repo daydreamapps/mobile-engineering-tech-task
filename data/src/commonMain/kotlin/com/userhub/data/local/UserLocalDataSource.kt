@@ -4,11 +4,10 @@ import com.userhub.data.remote.UserDto
 
 data class CachedUser(
     val user: UserDto,
-    val cachedAt: Long,
-    val firstSeenAt: Long
+    val cachedAt: Long
 )
 
 interface UserLocalDataSource {
-    fun saveUsers(users: List<UserDto>, timestamp: Long): List<CachedUser>
+    fun saveUsers(users: List<UserDto>, timestamp: Long)
     fun getUsers(): List<CachedUser>
 }

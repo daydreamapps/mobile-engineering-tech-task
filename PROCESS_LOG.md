@@ -290,3 +290,27 @@ Separately: I've added `Summary.md` to the repo. That file is off-limits to Clau
 ## 2026-09-20 — Action (assistant)
 
 Acknowledged. The three production-file changes named above were made to satisfy compilation for the RED tests, on the reasoning that they were "type-compatibility only, not a fix" — that distinction doesn't hold up against the actual instruction, which was tests only. Next step for tomorrow: revert those three production files to their pre-session state while keeping the four failing tests and the test-only fake updates intact, so the diff is tests-only as originally requested.
+
+---
+
+## 2026-09-21 — Action (assistant)
+
+Reverted `UserRepository.kt`, `UserLocalDataSource.kt`, and `SqlDelightUserLocalDataSource.kt` to their pre-session state (`git checkout` from before they were touched). Production code on this branch is now completely untouched — the diff is tests-only, as originally instructed.
+
+That reversion broke compilation for several of yesterday's tests, since they referenced production capability (`addedAtMillis`, `firstSeenAt`, `resolveSelectedUser()`, `onUndoWindowElapsed()`) that no longer exists anywhere. Rewrote/removed the affected tests to compile against today's actual code, at minimum change:
+- `UserUiMapperTest.kt` rewritten to assert against the existing `List<UserDto>.toUiModels()` — proves the same bug (two users with no real difference in "added at" still get different labels, purely from list position) without needing any new production field.
+- The "preserves a user's first-seen time across repeated successful fetches" test (Workstream 2) removed — cannot be expressed without a production `addedAtMillis`/first-seen concept that doesn't exist; noted in a comment in `UserRepositoryImplTest.kt`.
+- `SelectedUserResolverTest.kt` (Workstream 4) removed entirely — `resolveSelectedUser()` doesn't exist anywhere in production; a test-file-local copy of it would only test itself, not the app.
+- Workstream 3's three tests (undo/delete timing) removed. Investigated whether a simpler version could work (just asserting the repository's `deleteUser()` hasn't been called immediately after `onDeleteConfirmed()`) — it can't be made deterministic: the delete is fired via `GlobalScope.launch`, which runs on a real background thread outside `runTest`'s test-dispatcher control, so such an assertion would pass today regardless of whether the bug is present or fixed (a race, not a real check). Left a detailed comment in `UserFeedViewModelTest.kt` explaining exactly where this test would go, what it would confirm, and why it can't be written without either adding the missing hook to production or reshaping the fake around the intended fix — both out of scope for a tests-only branch.
+- `FakeUserRepository.kt` and `FakeLocalDataSource.kt` reverted to their pre-session versions where their session additions were no longer used by any remaining test.
+
+Ran all three modules after the changes:
+
+| Module | Total | Failed | Passed |
+|---|---|---|---|
+| `:domain` | 8 | 1 | 7 |
+| `:data` | 6 | 1 | 5 |
+| `:composeApp` | 7 | 1 | 6 |
+| **Total** | **21** | **3** | **18** |
+
+The 3 failures are genuine, deterministic failures against today's real code: `TimeProviderTest` (UTC offset bug), `UserRepositoryImplTest`'s empty-cache test (`NoSuchElementException` at the real bug line), and the rewritten `UserUiMapperTest` (position-based label bug). Workstreams 3 and 4 currently have no executable test — only the explanatory comment noted above — since neither bug can be pinned down with a real test until production gains at least a minimal hook to test against.

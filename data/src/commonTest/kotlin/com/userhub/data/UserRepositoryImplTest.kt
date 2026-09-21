@@ -67,11 +67,7 @@ class UserRepositoryImplTest {
     @Test
     fun `falls back to cached users when the network fails`() = runTest {
         val cached = listOf(
-            CachedUser(
-                UserDto(7, "Cached User", "cached@example.com", "male", "active"),
-                cachedAt = 1_700_000_000_000L,
-                firstSeenAt = 1_700_000_000_000L
-            )
+            CachedUser(UserDto(7, "Cached User", "cached@example.com", "male", "active"), 1_700_000_000_000L)
         )
         val engine = MockEngine { respondError(HttpStatusCode.ServiceUnavailable) }
         val repository = UserRepositoryImpl(
@@ -107,29 +103,18 @@ class UserRepositoryImplTest {
     }
 
     // --- Workstream 2: real "added ago" time (data-layer half) ---
-
-    @Test
-    fun `preserves a user's first-seen time across repeated successful fetches`() = runTest {
-        val local = FakeLocalDataSource()
-        val repository = UserRepositoryImpl(GoRestApi(createHttpClient(successEngine())), local)
-
-        val first = repository.getUsers()
-        val second = repository.getUsers()
-
-        assertIs<UsersResult.Success>(first)
-        assertIs<UsersResult.Success>(second)
-        assertEquals(first.addedAtMillis.getValue(1L), second.addedAtMillis.getValue(1L))
-    }
+    //
+    // The "preserves a user's first-seen time across repeated successful fetches" test from
+    // IMPLEMENTATION_PLAN.md is not included here: it asserts on `UsersResult.Success.addedAtMillis`,
+    // which does not exist anywhere in production. There is no way to express this test against
+    // today's code without first adding that field/capability to production — which is out of
+    // scope for this branch (tests only, no fixes). See PROCESS_LOG.md.
 
     @Test
     fun `drops cached users that are no longer present in the latest fetch`() = runTest {
         val local = FakeLocalDataSource(
             initial = listOf(
-                CachedUser(
-                    UserDto(99, "Stale User", "stale@example.com", "male", "active"),
-                    cachedAt = 1L,
-                    firstSeenAt = 1L
-                )
+                CachedUser(UserDto(99, "Stale User", "stale@example.com", "male", "active"), cachedAt = 1L)
             )
         )
         val repository = UserRepositoryImpl(GoRestApi(createHttpClient(successEngine())), local)

@@ -7,7 +7,7 @@ class SqlDelightUserLocalDataSource(database: UserDatabase) : UserLocalDataSourc
 
     private val queries = database.userCacheQueries
 
-    override fun saveUsers(users: List<UserDto>, timestamp: Long): List<CachedUser> {
+    override fun saveUsers(users: List<UserDto>, timestamp: Long) {
         queries.transaction {
             queries.clearAll()
             users.forEach { user ->
@@ -21,7 +21,6 @@ class SqlDelightUserLocalDataSource(database: UserDatabase) : UserLocalDataSourc
                 )
             }
         }
-        return getUsers()
     }
 
     override fun getUsers(): List<CachedUser> =
@@ -34,10 +33,7 @@ class SqlDelightUserLocalDataSource(database: UserDatabase) : UserLocalDataSourc
                     gender = row.gender,
                     status = row.status
                 ),
-                cachedAt = row.cached_at,
-                // TODO(workstream 2): no first-seen tracking exists yet — every sync clears and
-                // reinserts, so this is just an alias for cachedAt until the schema gains a real column.
-                firstSeenAt = row.cached_at
+                cachedAt = row.cached_at
             )
         }
 }
